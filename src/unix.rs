@@ -44,6 +44,12 @@ const MAP_HUGE_MASK: libc::c_int = 0;
 #[cfg(not(any(target_os = "linux", target_os = "android")))]
 const MAP_HUGE_SHIFT: libc::c_int = 0;
 
+#[cfg(any(target_os = "linux", target_os = "android"))]
+const MAP_NORESERVE: libc::c_int = libc::MAP_NORESERVE;
+
+#[cfg(not(any(target_os = "linux", target_os = "android")))]
+const MAP_NORESERVE: libc::c_int = 0;
+
 #[cfg(any(
     target_os = "android",
     all(target_os = "linux", not(target_env = "musl"))
@@ -240,23 +246,25 @@ impl MmapInner {
         )
     }
 
-    pub fn map_mut(len: usize, file: RawFd, offset: u64, populate: bool) -> io::Result<MmapInner> {
+    pub fn map_mut(len: usize, file: RawFd, offset: u64, populate: bool, noreserve: bool) -> io::Result<MmapInner> {
         let populate = if populate { MAP_POPULATE } else { 0 };
+        let noreserve = if noreserve { MAP_NORESERVE } else { 0 };
         MmapInner::new(
             len,
             libc::PROT_READ | libc::PROT_WRITE,
-            libc::MAP_SHARED | populate,
+            libc::MAP_SHARED | populate | noreserve,
             file,
             offset,
         )
     }
 
-    pub fn map_copy(len: usize, file: RawFd, offset: u64, populate: bool) -> io::Result<MmapInner> {
+    pub fn map_copy(len: usize, file: RawFd, offset: u64, populate: bool, noreserve: bool) -> io::Result<MmapInner> {
         let populate = if populate { MAP_POPULATE } else { 0 };
+        let noreserve = if noreserve { MAP_NORESERVE } else { 0 };
         MmapInner::new(
             len,
             libc::PROT_READ | libc::PROT_WRITE,
-            libc::MAP_PRIVATE | populate,
+            libc::MAP_PRIVATE | populate | noreserve,
             file,
             offset,
         )

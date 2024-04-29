@@ -143,6 +143,7 @@ pub struct MmapOptions {
     huge: Option<u8>,
     stack: bool,
     populate: bool,
+    noreserve: bool,
 }
 
 impl MmapOptions {
@@ -336,6 +337,32 @@ impl MmapOptions {
         self
     }
 
+    /// Do not reserve swap space for a mapping.
+    ///
+    /// This option corresponds to the `MAP_NORESERVE` flag on Linux. It has no effect on Windows.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use memmap2::MmapOptions;
+    /// use std::fs::File;
+    ///
+    /// # fn main() -> std::io::Result<()> {
+    /// let file = File::open("LICENSE-MIT")?;
+    ///
+    /// let mmap = unsafe {
+    ///     MmapOptions::new().noreserve().map(&file)?
+    /// };
+    ///
+    /// assert_eq!(&b"Copyright"[..], &mmap[..9]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn noreserve(&mut self) -> &mut Self {
+        self.noreserve = true;
+        self
+    }
+
     /// Creates a read-only memory map backed by a file.
     ///
     /// # Errors
@@ -420,7 +447,7 @@ impl MmapOptions {
     pub unsafe fn map_mut<T: MmapAsRawDesc>(&self, file: T) -> Result<MmapMut> {
         let desc = file.as_raw_desc();
 
-        MmapInner::map_mut(self.get_len(&file)?, desc.0, self.offset, self.populate)
+        MmapInner::map_mut(self.get_len(&file)?, desc.0, self.offset, self.populate, self.noreserve)
             .map(|inner| MmapMut { inner })
     }
 
@@ -451,7 +478,7 @@ impl MmapOptions {
     pub unsafe fn map_copy<T: MmapAsRawDesc>(&self, file: T) -> Result<MmapMut> {
         let desc = file.as_raw_desc();
 
-        MmapInner::map_copy(self.get_len(&file)?, desc.0, self.offset, self.populate)
+        MmapInner::map_copy(self.get_len(&file)?, desc.0, self.offset, self.populate, self.noreserve)
             .map(|inner| MmapMut { inner })
     }
 
@@ -524,7 +551,7 @@ impl MmapOptions {
     pub fn map_raw<T: MmapAsRawDesc>(&self, file: T) -> Result<MmapRaw> {
         let desc = file.as_raw_desc();
 
-        MmapInner::map_mut(self.get_len(&file)?, desc.0, self.offset, self.populate)
+        MmapInner::map_mut(self.get_len(&file)?, desc.0, self.offset, self.populate, self.noreserve)
             .map(|inner| MmapRaw { inner })
     }
 

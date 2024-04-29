@@ -281,6 +281,7 @@ impl MmapInner {
         handle: RawHandle,
         offset: u64,
         _populate: bool,
+        _noreserve: bool,
     ) -> io::Result<MmapInner> {
         let exec = protection_supported(handle, PAGE_EXECUTE_READ);
         let mut access = FILE_MAP_READ | FILE_MAP_WRITE;
